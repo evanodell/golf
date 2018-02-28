@@ -22,9 +22,9 @@ As Rae points out, the amount of space given over to golf courses has come up se
 
 My interest here is not in the environmental debate, but rather questions about the most appropriate land use. With that in mind, I'm taking a look at the amount of land given over to golf close to train stations in London, South East and East England, the three region of the UK with the highest house prices, reflecting the high demand for housing in the London commuter belt and other cities in these areas. I've arbitrarily selected a 2km radius from each train station, where it would take roughly 25 minutes of walking at a moderate pace to travel from the edge of the circle to its centre if travelling in a straight line.
 
-Overall, there is some 191,485,444 m^2^ of golf course land within 2km of a train station in London, the South East and East of England. That's some 47317 acres, or 19148.5 hectares. That's enough for 574,455 new homes at a very low density of just 30 homes per hectare. At a higher density, such as 80 dwellings per hectare terraced housing, that's some 1,531,880 homes.
+Overall, there is some 191,085,035 m^2^ of golf course land within 2km of a train station in London, the South East and East of England. That's some 47,218 acres, or 19108.5 hectares. That's enough for 573,255 new homes at a very low density of just 30 homes per hectare. At a higher density, such as 80 dwellings per hectare terraced housing, that's some 1,528,680 homes. There is 7,740,649,126 m^2^ of land and water within 2km of a train station in London, the South East and East of England, and 2.47% of it is golf course.
 
-If we lower the radius to 1km, there is still 41,212,837 m^2^ (10184 acres, 4121.3 hectares) of golf course within a single kilometre of a train station, enough space to build 123,639 low density suburban houses, or 329,704 higher density houses. Certainly not enough to solve the UK's housing issues, but it could still make a big difference.
+If we lower the radius to 1km, there is still 41,212,837 m^2^ (10,184 acres, 4,121.3 hectares) of golf course within a single kilometre of a train station, enough space to build 123,639 low density suburban houses, or 329,704 higher density houses. Certainly not enough to solve the UK's housing issues, but it could still make a big difference.
 
 ```{r needed-packages, echo=FALSE, message=FALSE, warning=FALSE}
 library(sf)
@@ -69,6 +69,10 @@ uk_stations <- select(uk_stations, "Station", "Latitude", "Longitude",
                       "TLC", "NLC", "Owner", "SRS", 
                       "trips_2017" = "Entries and exits 2017")
 
+office_rail_road <- read_csv("office-rail-road.csv")
+
+uk_stations <- uk_stations[uk_stations$TLC %in% office_rail_road$TLC,]
+
 uk_stations <- uk_stations[order(-uk_stations$trips_2017),] 
 
 stns_sf <- st_as_sf(uk_stations, 
@@ -93,13 +97,19 @@ golf_ints_summary_1000 <- group_by(golf_ints_1000, Station) %>%
   summarise() %>%
   mutate(area = st_area(.)) 
 
+stn_circles2 <- st_buffer(stns_sf, dist = 2000) %>% 
+  st_difference() %>%
+  mutate(area = st_area(.)) 
+
+sum(stn_circles2$area)
+
 ```
 
 
 
 ## Golf Course Map
 
-The following map highlights in bright pink all golf course land within 2km of a train station. If the radius of two or more train stations overlaps, the train station with more passengers takes precedence, to avoid double counting of space.[^1]
+The following map highlights in bright pink all golf course land within 2km of a train station. If the radius of two or more train stations overlaps, the train station with more passengers takes precedence, to avoid double counting of space.[^1] You can see a full screen version [here](maps/golf-map.html).
 
 ```{r summary_and_map, echo=FALSE, message=FALSE, warning=FALSE}
 
@@ -125,7 +135,7 @@ golf_ints_summary <- golf_ints_summary[order(-golf_ints_summary$trips_2017),]
 
 area_labels <- paste0(
   "<strong>Station: </strong>", golf_ints_summary$Station, "</br>",
-  "<strong>Passengers in 2017: </strong>", 
+  "<strong>Passengers in 2016-17: </strong>", 
   prettyNum(golf_ints_summary$trips_2017, big.mark = ","),
   "</br>",
   "<strong>Area given over to golf course: </strong>",
@@ -135,7 +145,7 @@ area_labels <- paste0(
   lapply(htmltools::HTML)
 
 golf_map <- leaflet(golf_ints_summary, options = leafletOptions(minZoom = 8)) %>%
-  setMaxBounds(-1.7, 50.5, 1.75, 53.0 ) %>%
+  setMaxBounds(-1.7, 50.5, 1.75, 53.0) %>%
   addTiles(
     urlTemplate = "https://{s}.tile.thunderforest.com/transport/{z}/{x}/{y}.png?apikey=47c287e79a6a4fc4829bc578954a75d2",
     attribution = "&copy; <a href='http://www.thunderforest.com/'>Thunderforest</a>,  &copy; <a href='http://www.openstreetmap.org/copyright'>OpenStreetMap</a>",
@@ -184,7 +194,7 @@ This chart shows the ten stations with the greatest percentage of their surround
 ```
 
 
-None of these stations have particularly high passenger volumes, with only West Byfleet and Elmstead Woods having more than a million passengers in 2017. Longcross, where the surrounding area is more than a quarter golf course, had less than 15,000 passengers last year and has no evening or weekend service.
+None of these stations have particularly high passenger volumes, with only West Byfleet and Elmstead Woods having more than a million passengers in 2016--17. Longcross, where the surrounding area is more than a quarter golf course, had less than 15,000 passengers last year and has no evening or weekend service.
 
 ```{r area_passengers, echo=FALSE, message=FALSE, warning=FALSE}
 
@@ -203,7 +213,7 @@ p3 <- ggplot(aes(y=as.numeric(area), x=trips_2017), data=golf_ints_summary) +
   geom_point(alpha=0.8) + 
   scale_y_continuous(labels = scales::comma) + 
   scale_x_continuous(labels = scales::comma) + 
-  geom_point(data = highlight_df, colour = "#990000FF") +
+  geom_point(data = highlight_df, colour = "#FF1D8E") +
    geom_text(data = highlight_df, aes(label = Station), hjust=-0.1,  nudge_x = 0.05) + 
   xlab("Passengers in 2017") + ylab("Golf Course Areas within 2km\n(Metres Squared)") + 
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
@@ -214,7 +224,7 @@ p3 <- ggplot(aes(y=as.numeric(area), x=trips_2017), data=golf_ints_summary) +
 ```
 
 
-I'm more interested in stations with both high passenger volumes and significant proportions of golf course nearby, some of which I have highlighted on the map above. For example, Maidenhead (below left) had over 4.6 million passengers in 2017, and has a large golf course located right next to the station. Maidenhead will also be the western Crossrail terminus from December 2019, so those numbers are likely to increase drastically as commuters move into the newly built homes in the area. Likewise 7.1% of the area surrounding Richmond, the 35th busiest train station in the UK with 11,650,544 passengers in 2017, is golf course. The Royal Borough of Windsor and Maidenhead have [published plans to build some 2,000 homes on the golf course site](https://www3.rbwm.gov.uk/news/article/169/development_plan_revealed_for_maidenhead_golf_club), though Richmond Park Golf Course is likely to stay a golf course for the foreseeable future.
+I'm more interested in stations with both high passenger volumes and significant proportions of golf course nearby, some of which I have highlighted on the map above. For example, Maidenhead (below left) had over 4.6 million passengers in 2017, and has a large golf course located right next to the station. Maidenhead will also be the western Crossrail terminus from December 2019, so those numbers are likely to increase drastically as commuters move into the newly built homes in the area. Likewise 7.1% of the area surrounding Richmond, the 35th busiest train station in the UK with 11,650,544 passengers in 2016--17, is golf course. The Royal Borough of Windsor and Maidenhead have [published plans to build some 2,000 homes on the golf course site](https://www3.rbwm.gov.uk/news/article/169/development_plan_revealed_for_maidenhead_golf_club), though Richmond Park Golf Course is likely to stay a golf course for the foreseeable future.
 
 ![Maidenhead](/img/golf/maidenhead.png "Maidenhead")![Richmond](/img/golf/richmond.png "Richmond")
 
@@ -223,7 +233,7 @@ I am not suggesting all golf courses should be concreted over and replaced with 
 
 ## Technical Notes and Data Sources
 
-Golf course data is from the Ordnance Survey [OS Open Greenspace](https://www.ordnancesurvey.co.uk/opendatadownload/products.html#OPGRSP) dataset. Unfortunately it is not divisible by UK region or local authority, so I matched golf course coordinates to [Regional Full Extent Boundaries](https://data.gov.uk/dataset/regions-december-2016-full-extent-boundaries-in-england2) data for London, the South East and East of England. I got train station coordinates and passenger numbers from [Doogal](https://www.doogal.co.uk/UkStations.php), a fantastic resource for British geographical data.
+Golf course data is from the Ordnance Survey [OS Open Greenspace](https://www.ordnancesurvey.co.uk/opendatadownload/products.html#OPGRSP) dataset. Unfortunately it is not divisible by UK region or local authority, so I matched golf course coordinates to [Regional Full Extent Boundaries](https://data.gov.uk/dataset/regions-december-2016-full-extent-boundaries-in-england2) data for London, the South East and East of England. I got train station coordinates from [Doogal](https://www.doogal.co.uk/UkStations.php), a fantastic resource for British geographical data, and passenger numbers from the [Office for Rail and Road](http://orr.gov.uk/statistics/published-stats/station-usage-estimates).
 
 As always, code is available on [GitHub](http://github.com/evanodell/golf).
 
