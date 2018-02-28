@@ -1,0 +1,234 @@
+---
+title: "Golf and train stations"
+author: "Evan Odell"
+date: '2018-02-28'
+bibliography: [golf.bib]
+link-citations: true
+output:
+  blogdown::html_page
+image: "/img/golf/maidenhead.png"
+---
+
+
+```{r setup, include=FALSE}
+# Add a common class name for every chunks
+knitr::opts_chunk$set(
+  echo = TRUE)
+```
+
+Last summer, Alasdair Rae at the University of Sheffield [wrote a blog post](http://www.statsmapsnpix.com/2017/07/what-percent-golf-course-is-your-area.html) showing that about 0.54% of the UK is golf course. It's not much, Rae described it as roughly the same area as Greater Manchester; although in comparison it is roughly twice as much space as urban parks (0.27% of the UK), and more than four times as much as the amount of continuous urban fabric (0.13%) [@rae2017].
+
+As Rae points out, the amount of space given over to golf courses has come up several times in the UK media, including on the [BBC](http://www.bbc.co.uk/news/magazine-24378868), in the [FT](https://www.ft.com/content/79772697-54e4-32c9-96d7-5c1110270eb2) and the [Independent](https://www.independent.co.uk/environment/golf-courses-farming-subsidies-allotments-michael-gove-environment-secretary-cap-eu-wealthy-a7853741.html), amongst others. These discussion often revolve around the environmental impact of golf (generally negative, though I found little research on it) and whether golf is the best use of that space. In the environmental side, golf's apologists, such as commentator Peter Alliss quoted in the BBC article above, claim that much of a golf course acts as a "sanctuary for wildlife" and that they use less pesticides and fertilizer than a farm. However farms produce food, and anyone who believes that golf courses are in any way natural has simply lost sight of what natural, untouched land actually looks like. And while a golf course can serve as a sanctuary for some wildlife, so too can a park, only parks can also be enjoyed by the vast majority of the non-golfing public,
+
+My interest here is not in the environmental debate, but rather questions about the most appropriate land use. With that in mind, I'm taking a look at the amount of land given over to golf close to train stations in London, South East and East England, the three region of the UK with the highest house prices, reflecting the high demand for housing in the London commuter belt and other cities in these areas. I've arbitrarily selected a 2km radius from each train station, where it would take roughly 25 minutes of walking at a moderate pace to travel from the edge of the circle to its centre if travelling in a straight line.
+
+Overall, there is some 191,485,444 m^2 of golf course land within 2km of a train station in London, the South East and East of England. That's some 47317 acres, or 19148.5 hectares. That's enough for 574,455 new homes at a very low density of just 30 homes per hectare. At a higher density, such as 80 dwellings per hectare terraced housing, that's some 1,531,880 homes.
+
+If we lower the radius to 1km, there is still 41,212,837 m^2 (10184 acres, 4121.3 hectares) of golf course within a single kilometre of a train station, enough space to build 123,639 low density suburban houses, or 329,704 higher density houses. Certainly not enough to solve the UK's housing issues, but it could still make a big difference.
+
+```{r needed-packages, echo=FALSE, message=FALSE, warning=FALSE}
+library(sf)
+library(rgdal)
+library(sp)
+library(dplyr)
+library(readr)
+library(readxl)
+library(leaflet)
+library(ggplot2)
+```
+
+```{r map-data, message=FALSE, warning=FALSE, echo=FALSE, eval=FALSE}
+
+green_space <- readOGR("open_greenspace/data/GB_GreenspaceSite.shp")
+
+golf_map <- green_space[green_space$function.=="Golf Course",]
+
+golf_map <- spTransform(golf_map, CRS("+init=epsg:4326")) %>%
+  st_as_sf() %>% 
+  st_transform(3035)
+
+ugcbe <- readOGR("regions/Regions_December_2016_Full_Extent_Boundaries_in_England.shp")
+
+ugcbe <- spTransform(ugcbe, CRS("+init=epsg:4326")) %>%
+  st_as_sf() %>%
+  st_transform(3035)
+
+ugcbe <- subset(ugcbe, rgn16nm %in% c("London", "South East", "East of England"))
+
+golf_map <- st_intersection(golf_map, ugcbe$geometry)
+
+readr::write_rds(golf_map, "golf_map.rds")
+```
+
+```{r stations, echo=FALSE, message=FALSE, warning=FALSE}
+
+uk_stations <- read_csv("UK stations.csv")
+
+uk_stations <- select(uk_stations, "Station", "Latitude", "Longitude", 
+                      "TLC", "NLC", "Owner", "SRS", 
+                      "trips_2017" = "Entries and exits 2017")
+
+uk_stations <- uk_stations[order(-uk_stations$trips_2017),] 
+
+stns_sf <- st_as_sf(uk_stations, 
+                   coords = c("Longitude", "Latitude"), crs = 4326) %>% 
+  st_transform(3035)
+
+stn_circles <- st_buffer(stns_sf, dist = 2000) 
+
+stn_circles_1000 <- st_buffer(stns_sf, dist = 1000) 
+
+```
+
+```{r small-stns-circles, message=FALSE, warning=FALSE, include=FALSE}
+
+golf_map <- read_rds("golf_map.rds")
+
+golf_ints_1000 <- st_intersection(golf_map, stn_circles_1000) 
+
+golf_ints_1000 <- golf_ints_1000[order(-golf_ints_1000$trips_2017),]
+
+golf_ints_summary_1000 <- group_by(golf_ints_1000, Station) %>% 
+  summarise() %>%
+  mutate(area = st_area(.)) 
+
+```
+
+
+
+## Golf Course Map
+
+The following map highlights in bright pink all golf course land within 2km of a train station. If the radius of two or more train stations overlaps, the train station with more passengers takes precedence, to avoid double counting of space.[^1]
+
+```{r summary_and_map, echo=FALSE, message=FALSE, warning=FALSE}
+
+golf_map <- read_rds("golf_map.rds")
+
+golf_ints <- st_intersection(golf_map, stn_circles) 
+
+golf_ints <- golf_ints[order(-golf_ints$trips_2017),]
+
+golf_ints_summary <- group_by(golf_ints, Station) %>% 
+  summarise() %>%
+  mutate(area = st_area(.)) 
+
+golf_ints_summary$golf_percent <- as.numeric(golf_ints_summary$area) / (3.14159*(2000^2))
+
+golf_ints_summary <- left_join(golf_ints_summary, uk_stations)
+ 
+golf_ints_summary <- golf_ints_summary[order(-golf_ints_summary$trips_2017),] 
+ 
+ golf_ints_summary <- golf_ints_summary %>% 
+   st_transform(4326) %>%
+   st_difference()
+
+area_labels <- paste0(
+  "<strong>Station: </strong>", golf_ints_summary$Station, "</br>",
+  "<strong>Passengers in 2017: </strong>", 
+  prettyNum(golf_ints_summary$trips_2017, big.mark = ","),
+  "</br>",
+  "<strong>Area given over to golf course: </strong>",
+      prettyNum(round(golf_ints_summary$area,0), big.mark = ","), " m^2 </br>",
+  "<strong>Percentage of area given over to golf course: </strong>",
+      scales::percent(golf_ints_summary$golf_percent), "</br>") %>% 
+  lapply(htmltools::HTML)
+
+golf_map <- leaflet(golf_ints_summary, options = leafletOptions(minZoom = 8)) %>%
+  setMaxBounds(-1.7, 50.5, 1.75, 53.0 ) %>%
+  addTiles(
+    urlTemplate = "https://{s}.tile.thunderforest.com/transport/{z}/{x}/{y}.png?apikey=47c287e79a6a4fc4829bc578954a75d2",
+    attribution = "&copy; <a href='http://www.thunderforest.com/'>Thunderforest</a>,  &copy; <a href='http://www.openstreetmap.org/copyright'>OpenStreetMap</a>",
+    options = providerTileOptions(variant='transport-dark', apikey = 'YOUR-KEY')
+   ) %>%
+  addPolygons(color = "#FF1D8E",
+              weight = 0.4,
+              opacity = 1,
+              fillOpacity = 0.5,
+              highlight = highlightOptions(weight = 2,
+                                           color = "#1d8eff",
+                                           fillColor = "#1d8eff",
+                                           dashArray = "",
+                                           fillOpacity = 0.4,
+                                           bringToFront = TRUE),
+               label = area_labels)
+
+golf_map
+
+```
+
+
+This chart shows the ten stations with the greatest percentage of their surrounding area devoted to golf. These percentages are of all surface area, including the stations themselves, waterways, roads, etc. The actual percentage of _usuable_ land devoted to golf is therefore at least slightly higher in all instances.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+  p1 <- ggplot(aes(y=golf_percent, x=factor(Station, 
+                                                levels = c("Longcross",
+                                                           "Sunningdale", 
+                                                           "Belmont", "Denham",
+                                                           "Melton", 
+                                                           "West Byfleet", 
+                                                           "Eynsford", 
+                                                           "Shoreham (Kent)", 
+                                                           "Elmstead Woods", 
+                                                           "Knockholt"))), 
+               data = top_n(golf_ints_summary, 10, area)) +
+  geom_col(fill="#6fe200", alpha=0.9) + 
+  scale_y_continuous(labels = scales::percent) +
+  xlab("Station") + ylab("Golf Course Areas within 2km\n(Percentage of total area)") + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  ggtitle("10 stations with the most local area devoted to golf") + 
+  labs(caption = "Evan Odell | 2018 | CC-BY")
+
+  p1
+
+```
+
+
+None of these stations have particularly high passenger volumes, with only West Byfleet and Elmstead Woods having more than a million passengers in 2017. Longcross, where the surrounding area is more than a quarter golf course, had less than 15,000 passengers last year and has no evening or weekend service.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+select <- c("Maidenhead",
+            "Richmond",
+            "Watford Junction",
+            "Raynes Park",
+            "Surbiton",
+            "Benfleet")
+
+golf_ints_summary$highlight <- golf_ints_summary$Station %in% select
+
+highlight_df <- subset(golf_ints_summary, highlight == TRUE)
+
+p3 <- ggplot(aes(y=as.numeric(area), x=trips_2017), data=golf_ints_summary) +
+  geom_point(alpha=0.8) + 
+  scale_y_continuous(labels = scales::comma) + 
+  scale_x_continuous(labels = scales::comma) + 
+  geom_point(data = highlight_df, colour = "#990000FF") +
+   geom_text(data = highlight_df, aes(label = Station), hjust=-0.1,  nudge_x = 0.05) + 
+  xlab("Passengers in 2017") + ylab("Golf Course Areas within 2km\n(Metres Squared)") + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  labs(caption = "Evan Odell | 2018 | CC-BY") +
+  ggtitle("Golf course area by passenger numbers")
+
+  p3
+```
+
+
+I'm more interested in stations with both high passenger volumes and significant proportions of golf course nearby, some of which I have highlighted on the map above. For example, Maidenhead had over 4.6 million passengers in 2017, and has a large golf course located right next to the station. Maidenhead will also be the western Crossrail terminus from December 2019, so those numbers are likely to increase drastically as commuters move into the newly built homes in the area. Likewise 7.1% of the area surrounding Richmond, the 35th busiest train station in the UK with 11,650,544 passengers in 2017, is golf course. The Royal Borough of Windsor and Maidenhead have [published plans to build some 2,000 homes on the golf course site](https://www3.rbwm.gov.uk/news/article/169/development_plan_revealed_for_maidenhead_golf_club), though Richmond Park Golf Course is likely to stay a golf course for the foreseeable future.
+
+
+![Maidenhead](img/golf/maidenhead.png) ![Richmond](img/golf/richmond.png)
+
+I am not suggesting all golf courses should be concreted over and replaced with housing or offices. Rather, I am suggesting that the use of this land for golf does not make sense, given the many other possibilities. Access to urban greenspace is associated with improved general health and wellbeing [@worldhealthorganization2017], but it is difficult to see how a golf course -- restricted to paying members or ticket holders -- can have the same positive impact as a public park that anyone can visit. Perhaps more councils should follow the example of Lewisham, which [closed the Beckenham Park course in 2016](https://londonist.com/2016/02/inner-london-s-last-public-golf-course-to-close) and converted it into a park to save money and provide more benefit to the majority of non-golfing local residents, although it is still visible on the map above.
+
+
+## Technical Notes and Data Sources
+
+Golf course data is from the Ordnance Survey [OS Open Greenspace](https://www.ordnancesurvey.co.uk/opendatadownload/products.html#OPGRSP) dataset. Unfortunately it is not divisible by UK region or local authority, so I matched golf course coordinates to [Regional Full Extent Boundaries](https://data.gov.uk/dataset/regions-december-2016-full-extent-boundaries-in-england2) data for London, the South East and East of England. I got train station coordinates and passenger numbers from [Doogal](https://www.doogal.co.uk/UkStations.php), a fantastic resource for British geographical data.
+
+As always, code is available on [GitHub](http://github.com/evanodell/golf).
+
+## References
+
+
+
+[^1]: If you have a method for adjusting overlapping polygons so that the areas of polygons closer to their own centre take precedence over others please [get in touch](mailto:evanodell91@gmail.com)
