@@ -22,9 +22,9 @@ As Rae points out, the amount of space given over to golf courses has come up se
 
 My interest here is not in the environmental debate, but rather questions about the most appropriate land use. With that in mind, I'm taking a look at the amount of land given over to golf close to train stations in London, South East and East England, the three region of the UK with the highest house prices, reflecting the high demand for housing in the London commuter belt and other cities in these areas. I've arbitrarily selected a 2km radius from each train station, where it would take roughly 25 minutes of walking at a moderate pace to travel from the edge of the circle to its centre if travelling in a straight line.
 
-Overall, there is some 191,485,444 m^2 of golf course land within 2km of a train station in London, the South East and East of England. That's some 47317 acres, or 19148.5 hectares. That's enough for 574,455 new homes at a very low density of just 30 homes per hectare. At a higher density, such as 80 dwellings per hectare terraced housing, that's some 1,531,880 homes.
+Overall, there is some 191,485,444 m^2^ of golf course land within 2km of a train station in London, the South East and East of England. That's some 47317 acres, or 19148.5 hectares. That's enough for 574,455 new homes at a very low density of just 30 homes per hectare. At a higher density, such as 80 dwellings per hectare terraced housing, that's some 1,531,880 homes.
 
-If we lower the radius to 1km, there is still 41,212,837 m^2 (10184 acres, 4121.3 hectares) of golf course within a single kilometre of a train station, enough space to build 123,639 low density suburban houses, or 329,704 higher density houses. Certainly not enough to solve the UK's housing issues, but it could still make a big difference.
+If we lower the radius to 1km, there is still 41,212,837 m^2^ (10184 acres, 4121.3 hectares) of golf course within a single kilometre of a train station, enough space to build 123,639 low density suburban houses, or 329,704 higher density houses. Certainly not enough to solve the UK's housing issues, but it could still make a big difference.
 
 ```{r needed-packages, echo=FALSE, message=FALSE, warning=FALSE}
 library(sf)
@@ -53,7 +53,8 @@ ugcbe <- spTransform(ugcbe, CRS("+init=epsg:4326")) %>%
   st_as_sf() %>%
   st_transform(3035)
 
-ugcbe <- subset(ugcbe, rgn16nm %in% c("London", "South East", "East of England"))
+ugcbe <- subset(ugcbe, rgn16nm %in% c("London", "South East", 
+                                      "East of England"))
 
 golf_map <- st_intersection(golf_map, ugcbe$geometry)
 
@@ -159,7 +160,7 @@ golf_map
 
 This chart shows the ten stations with the greatest percentage of their surrounding area devoted to golf. These percentages are of all surface area, including the stations themselves, waterways, roads, etc. The actual percentage of _usuable_ land devoted to golf is therefore at least slightly higher in all instances.
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+```{r top_ten, echo=FALSE, message=FALSE, warning=FALSE}
   p1 <- ggplot(aes(y=golf_percent, x=factor(Station, 
                                                 levels = c("Longcross",
                                                            "Sunningdale", 
@@ -185,7 +186,7 @@ This chart shows the ten stations with the greatest percentage of their surround
 
 None of these stations have particularly high passenger volumes, with only West Byfleet and Elmstead Woods having more than a million passengers in 2017. Longcross, where the surrounding area is more than a quarter golf course, had less than 15,000 passengers last year and has no evening or weekend service.
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+```{r area_passengers, echo=FALSE, message=FALSE, warning=FALSE}
 
 select <- c("Maidenhead",
             "Richmond",
@@ -213,12 +214,11 @@ p3 <- ggplot(aes(y=as.numeric(area), x=trips_2017), data=golf_ints_summary) +
 ```
 
 
-I'm more interested in stations with both high passenger volumes and significant proportions of golf course nearby, some of which I have highlighted on the map above. For example, Maidenhead had over 4.6 million passengers in 2017, and has a large golf course located right next to the station. Maidenhead will also be the western Crossrail terminus from December 2019, so those numbers are likely to increase drastically as commuters move into the newly built homes in the area. Likewise 7.1% of the area surrounding Richmond, the 35th busiest train station in the UK with 11,650,544 passengers in 2017, is golf course. The Royal Borough of Windsor and Maidenhead have [published plans to build some 2,000 homes on the golf course site](https://www3.rbwm.gov.uk/news/article/169/development_plan_revealed_for_maidenhead_golf_club), though Richmond Park Golf Course is likely to stay a golf course for the foreseeable future.
+I'm more interested in stations with both high passenger volumes and significant proportions of golf course nearby, some of which I have highlighted on the map above. For example, Maidenhead (below left) had over 4.6 million passengers in 2017, and has a large golf course located right next to the station. Maidenhead will also be the western Crossrail terminus from December 2019, so those numbers are likely to increase drastically as commuters move into the newly built homes in the area. Likewise 7.1% of the area surrounding Richmond, the 35th busiest train station in the UK with 11,650,544 passengers in 2017, is golf course. The Royal Borough of Windsor and Maidenhead have [published plans to build some 2,000 homes on the golf course site](https://www3.rbwm.gov.uk/news/article/169/development_plan_revealed_for_maidenhead_golf_club), though Richmond Park Golf Course is likely to stay a golf course for the foreseeable future.
 
+![Maidenhead](/img/golf/maidenhead.png "Maidenhead")![Richmond](/img/golf/richmond.png "Richmond")
 
-![Maidenhead](img/golf/maidenhead.png) ![Richmond](img/golf/richmond.png)
-
-I am not suggesting all golf courses should be concreted over and replaced with housing or offices. Rather, I am suggesting that the use of this land for golf does not make sense, given the many other possibilities. Access to urban greenspace is associated with improved general health and wellbeing [@worldhealthorganization2017], but it is difficult to see how a golf course -- restricted to paying members or ticket holders -- can have the same positive impact as a public park that anyone can visit. Perhaps more councils should follow the example of Lewisham, which [closed the Beckenham Park course in 2016](https://londonist.com/2016/02/inner-london-s-last-public-golf-course-to-close) and converted it into a park to save money and provide more benefit to the majority of non-golfing local residents, although it is still visible on the map above.
+I am not suggesting all golf courses should be concreted over and replaced with housing or offices. Rather, I am suggesting that the use of this land for golf does not make sense, given the many other possibilities. Access to urban green space is associated with improved general health and wellbeing [@worldhealthorganization2017], but it is difficult to see how a golf course -- restricted to paying members or ticket holders -- can have the same positive impact as a public park that anyone can visit. Perhaps more councils should follow the example of Lewisham, which [closed the Beckenham Park course in 2016](https://londonist.com/2016/02/inner-london-s-last-public-golf-course-to-close) and converted it into a park to save money and provide more benefit to the majority of non-golfing local residents, although it is still visible on the map above.
 
 
 ## Technical Notes and Data Sources
