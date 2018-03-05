@@ -5,7 +5,7 @@ date: '2018-02-28'
 bibliography: [golf.bib]
 link-citations: true
 output:
-  blogdown::html_page
+  html_document
 image: "/img/golf/maidenhead.png"
 ---
 
@@ -226,7 +226,7 @@ p3 <- ggplot(aes(y=as.numeric(area), x=trips_2017), data=golf_ints_summary) +
 
 I'm more interested in stations with both high passenger volumes and significant proportions of golf course nearby, some of which I have highlighted on the map above. For example, Maidenhead (below left) had over 4.6 million passengers in 2017, and has a large golf course located right next to the station. Maidenhead will also be the western Crossrail terminus from December 2019, so those numbers are likely to increase drastically as commuters move into the newly built homes in the area. Likewise 7.1% of the area surrounding Richmond, the 35th busiest train station in the UK with 11,650,544 passengers in 2016--17, is golf course. The Royal Borough of Windsor and Maidenhead have [published plans to build some 2,000 homes on the golf course site](https://www3.rbwm.gov.uk/news/article/169/development_plan_revealed_for_maidenhead_golf_club), though Richmond Park Golf Course is likely to stay a golf course for the foreseeable future.
 
-![Maidenhead](/img/golf/maidenhead.png "Maidenhead")![Richmond](/img/golf/richmond.png "Richmond")
+![Maidenhead](img/golf/maidenhead.png "Maidenhead")![Richmond](img/golf/richmond.png "Richmond")
 
 I am not suggesting all golf courses should be concreted over and replaced with housing or offices. Rather, I am suggesting that the use of this land for golf does not make sense, given the many other possibilities. Access to urban green space is associated with improved general health and wellbeing [@worldhealthorganization2017], but it is difficult to see how a golf course -- restricted to paying members or ticket holders -- can have the same positive impact as a public park that anyone can visit. Perhaps more councils should follow the example of Lewisham, which [closed the Beckenham Park course in 2016](https://londonist.com/2016/02/inner-london-s-last-public-golf-course-to-close) and converted it into a park to save money and provide more benefit to the majority of non-golfing local residents, although it is still visible on the map above.
 
